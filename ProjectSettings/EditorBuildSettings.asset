@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1045 &1
+EditorBuildSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Scenes:
+  - enabled: 0
+    path: Assets/Scenes/CubesAndBalls.unity
+    guid: 0d0cd1e59a9ec485195457dc049c1e2e
+  - enabled: 0
+    path: Assets/Scenes/HandTrackingWithHingeJoints.unity
+    guid: c6800c8c5024b49eebd5494c7597ab7e
+  - enabled: 0
+    path: Assets/Scenes/Buttons.unity
+    guid: dcb9ba29274e343858a5d1cb48795a58
+  - enabled: 1
+    path: Assets/Scenes/Effects.unity
+    guid: f68da384bcbb347e9864d40c62c4d025
+  m_configObjects: {}
