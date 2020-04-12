@@ -14,7 +14,14 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Scenes/Buttons.unity
     guid: dcb9ba29274e343858a5d1cb48795a58
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Effects.unity
     guid: f68da384bcbb347e9864d40c62c4d025
-  m_configObjects: {}
+  - enabled: 1
+    path: Assets/Scenes/VFX.unity
+    guid: 26eb963ae765648b1a925158efb816bb
+  m_configObjects:
+    Unity.XR.Oculus.Settings: {fileID: 11400000, guid: 123cf60a89c5f4c87a480f6d4f0a3b7f,
+      type: 2}
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 6d8bb60640c1d4ac5ae79ca9c9a715f1,
+      type: 2}
