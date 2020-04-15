@@ -20,9 +20,12 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Scenes/VFX.unity
     guid: 26eb963ae765648b1a925158efb816bb
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/VFXFollow.unity
     guid: 2ea9bc305213c43599869a1432983186
+  - enabled: 1
+    path: Assets/Scenes/VFXPixels.unity
+    guid: 7adc0f31b1e6f4474a056d83a8025228
   m_configObjects:
     Unity.XR.Oculus.Settings: {fileID: 11400000, guid: 123cf60a89c5f4c87a480f6d4f0a3b7f,
       type: 2}
