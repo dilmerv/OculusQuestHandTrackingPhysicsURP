@@ -8,6 +8,8 @@ This repository contain a variety of examples showing how to use Physic componen
 
 |Scenes||
 |---|---|
+|VFXFollow.unity|VFXPixels.unity|
+|<img src="https://github.com/dilmerv/OculusQuestHandTrackingPhysicsURP/blob/master/docs/images/Demo_9.gif" width="300">|<img src="https://github.com/dilmerv/OculusQuestHandTrackingPhysicsURP/blob/master/docs/images/Demo_10.gif" width="300">|
 |Effects.unity|Effects.unity|
 |<img src="https://github.com/dilmerv/OculusQuestHandTrackingPhysicsURP/blob/master/docs/images/Demo_7.gif" width="300">|<img src="https://github.com/dilmerv/OculusQuestHandTrackingPhysicsURP/blob/master/docs/images/Demo_8.gif" width="300">|
 |Buttons.unity|Buttons.unity|
