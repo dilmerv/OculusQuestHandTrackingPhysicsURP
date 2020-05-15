@@ -256,6 +256,7 @@ MonoBehaviour:
   externalSurfaceHeight: 0
   compositionDepth: 0
   noDepthBufferTesting: 0
+  layerTextureFormat: 0
   currentOverlayShape: 0
   textures:
   - {fileID: 2800000, guid: 2b183318621228543aa9c27a736a1493, type: 3}
@@ -338,6 +339,7 @@ MonoBehaviour:
   externalSurfaceHeight: 0
   compositionDepth: 0
   noDepthBufferTesting: 1
+  layerTextureFormat: 0
   currentOverlayShape: 2
   textures:
   - {fileID: 8900000, guid: b40a1cb5f1124ec489cc1e7a533e46e6, type: 3}

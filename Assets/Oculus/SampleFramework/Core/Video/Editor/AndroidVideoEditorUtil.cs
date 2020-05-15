@@ -1,3 +1,8 @@
+/************************************************************************************
+
+Copyright (c) Facebook Technologies, LLC and its affiliates. All rights reserved.  
+
+************************************************************************************/
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -16,7 +21,8 @@ public class AndroidVideoEditorUtil
     private static readonly string audio360PluginPath = "Assets/Oculus/SampleFramework/Core/Video/Plugins/Android/Audio360/audio360.aar";
     private static readonly string audio360Exo29PluginPath = "Assets/Oculus/SampleFramework/Core/Video/Plugins/Android/Audio360/audio360-exo29.aar";
 
-    private static readonly string gradleTemplatePath = "Assets/Plugins/Android/mainTemplate.gradle";
+    private static readonly string androidPluginsFolder = "Assets/Plugins/Android/";
+    private static readonly string gradleTemplatePath = androidPluginsFolder + "mainTemplate.gradle";
     private static readonly string disabledGradleTemplatePath = gradleTemplatePath + ".DISABLED";
     private static readonly string internalGradleTemplatePath = Path.Combine(Path.Combine(GetBuildToolsDirectory(BuildTarget.Android), "GradleTemplates"), "mainTemplate.gradle");
 
@@ -52,6 +58,12 @@ public class AndroidVideoEditorUtil
 
         // Enable gradle build with exoplayer
         EditorUserBuildSettings.androidBuildSystem = AndroidBuildSystem.Gradle;
+
+        // create android plugins directory if it doesn't exist
+        if (!Directory.Exists(androidPluginsFolder))
+        {
+            Directory.CreateDirectory(androidPluginsFolder);
+        }
 
         if (!File.Exists(gradleTemplatePath))
         {

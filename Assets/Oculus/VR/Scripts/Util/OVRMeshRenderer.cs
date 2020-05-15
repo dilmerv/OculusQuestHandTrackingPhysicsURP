@@ -101,26 +101,30 @@ public class OVRMeshRenderer : MonoBehaviour
 		{
 			_skinnedMeshRenderer = gameObject.AddComponent<SkinnedMeshRenderer>();
 		}
-		_skinnedMeshRenderer.sharedMesh = _ovrMesh.Mesh;
-		_originalMaterial = _skinnedMeshRenderer.sharedMaterial;
 
-		if (_ovrSkeleton != null)
+		if (_ovrMesh.IsInitialized && _ovrSkeleton.IsInitialized)
 		{
-			int numSkinnableBones = _ovrSkeleton.GetCurrentNumSkinnableBones();
-			var bindPoses = new Matrix4x4[numSkinnableBones];
-			var bones = new Transform[numSkinnableBones];
-			var localToWorldMatrix = transform.localToWorldMatrix;
-			for (int i = 0; i < numSkinnableBones && i < _ovrSkeleton.Bones.Count; ++i)
-			{
-				bones[i] = _ovrSkeleton.Bones[i].Transform;
-				bindPoses[i] = _ovrSkeleton.BindPoses[i].Transform.worldToLocalMatrix * localToWorldMatrix;
-			}
-			_ovrMesh.Mesh.bindposes = bindPoses;
-			_skinnedMeshRenderer.bones = bones;
-			_skinnedMeshRenderer.updateWhenOffscreen = true;
-		}
+			_skinnedMeshRenderer.sharedMesh = _ovrMesh.Mesh;
+			_originalMaterial = _skinnedMeshRenderer.sharedMaterial;
 
-		IsInitialized = true;
+			if (_ovrSkeleton != null)
+			{
+				int numSkinnableBones = _ovrSkeleton.GetCurrentNumSkinnableBones();
+				var bindPoses = new Matrix4x4[numSkinnableBones];
+				var bones = new Transform[numSkinnableBones];
+				var localToWorldMatrix = transform.localToWorldMatrix;
+				for (int i = 0; i < numSkinnableBones && i < _ovrSkeleton.Bones.Count; ++i)
+				{
+					bones[i] = _ovrSkeleton.Bones[i].Transform;
+					bindPoses[i] = _ovrSkeleton.BindPoses[i].Transform.worldToLocalMatrix * localToWorldMatrix;
+				}
+				_ovrMesh.Mesh.bindposes = bindPoses;
+				_skinnedMeshRenderer.bones = bones;
+				_skinnedMeshRenderer.updateWhenOffscreen = true;
+
+				IsInitialized = true;
+			}
+		}
 	}
 
 	private void Update()
@@ -167,5 +171,14 @@ public class OVRMeshRenderer : MonoBehaviour
 				}
 			}
 		}
+#if UNITY_EDITOR
+		else
+		{
+			if (OVRInput.IsControllerConnected(OVRInput.Controller.Hands))
+			{
+				Initialize();
+			}
+		}
+#endif
 	}
 }

@@ -1,3 +1,9 @@
+/************************************************************************************
+
+Copyright (c) Facebook Technologies, LLC and its affiliates. All rights reserved.  
+
+************************************************************************************/
+
 package com.oculus.videoplayer;
 
 import android.content.Context;
@@ -85,6 +91,8 @@ import com.twobigears.audio360exo2.Audio360Sink;
 import com.twobigears.audio360exo2.OpusRenderer;
 import java.io.File;
 import java.lang.reflect.Constructor;
+import java.lang.Math;
+import java.lang.System;
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
@@ -116,6 +124,19 @@ public class NativeVideoPlayer
     static Handler handler;
 
     static volatile boolean isPlaying;
+
+    static volatile long duration;
+
+    static volatile long lastPlaybackPosition;
+    static volatile long lastPlaybackUpdateTime;
+    static volatile float lastPlaybackSpeed;
+
+    private static void updatePlaybackState() {
+        duration = exoPlayer.getDuration();
+        lastPlaybackPosition = exoPlayer.getCurrentPosition();
+        lastPlaybackSpeed = isPlaying ? exoPlayer.getPlaybackParameters().speed : 0;
+        lastPlaybackUpdateTime = System.currentTimeMillis();
+    }
 
     private static Handler getHandler()
     {
@@ -160,7 +181,7 @@ public class NativeVideoPlayer
                 drmSessionManager);
 
             ArrayList<Renderer> rendererList = new ArrayList<Renderer>(Arrays.asList(renderers));
-
+            
             // The output latency of the engine can be used to compensate for sync
             double latency = engine.getOutputLatencyMs();
 
@@ -343,6 +364,20 @@ public class NativeVideoPlayer
                     public void onPlayerStateChanged(boolean playWhenReady, int playbackState)
                     {
                         isPlaying = playWhenReady && (playbackState == Player.STATE_READY || playbackState == Player.STATE_BUFFERING);
+
+                        updatePlaybackState();
+                    }
+
+                    @Override 
+                    public void onPlaybackParametersChanged(PlaybackParameters params)
+                    {
+                        updatePlaybackState();
+                    }
+
+                    @Override
+                    public void onPositionDiscontinuity(int reason)
+                    {
+                        updatePlaybackState();
                     }
 
                 });            
@@ -468,5 +503,51 @@ public class NativeVideoPlayer
     public static boolean getIsPlaying()
     {
         return isPlaying;
+    }
+
+    public static long getDuration()
+    {
+        return duration;
+    }
+
+    public static long getPlaybackPosition()
+    {
+        return Math.max(0, Math.min(duration, lastPlaybackPosition + (long)((System.currentTimeMillis() - lastPlaybackUpdateTime) * lastPlaybackSpeed)));
+    }
+
+    public static void setPlaybackPosition(final long position)
+    {
+        getHandler().post( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                if ( exoPlayer != null )
+                {
+                    Timeline timeline = exoPlayer.getCurrentTimeline();
+                    if ( timeline != null ) 
+                    {
+                        int windowIndex = timeline.getFirstWindowIndex(false);
+                        long windowPositionUs = position * 1000L;
+                        Timeline.Window tmpWindow = new Timeline.Window();
+                        for(int i = timeline.getFirstWindowIndex(false);
+                            i < timeline.getLastWindowIndex(false); i++)
+                        {
+                            timeline.getWindow(i, tmpWindow);
+
+                            if (tmpWindow.durationUs > windowPositionUs) 
+                            {
+                                break;
+                            }
+
+                            windowIndex++;
+                            windowPositionUs -= tmpWindow.durationUs;
+                        }
+
+                        exoPlayer.seekTo(windowIndex, windowPositionUs / 1000L);
+                    }
+                }
+            }
+        });
     }
 }

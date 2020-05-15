@@ -117,7 +117,6 @@ public class OvrAvatar : MonoBehaviour
     // Avatar asset
     private HashSet<UInt64> assetLoadingIds = new HashSet<UInt64>();
     private bool assetsFinishedLoading = false;
-    private int renderPartCount = 0;
 
     // Material manager
     private OvrAvatarMaterialManager materialManager;
@@ -703,7 +702,7 @@ public class OvrAvatar : MonoBehaviour
                 catch (Exception e)
                 {
                     assetsFinishedLoading = true;
-                    throw; // rethrow the original exception to preserve callstack
+                    throw e; // rethrow the original exception to preserve callstack
                 }
 #if AVATAR_INTERNAL
                 AssetsDoneLoading.Invoke();

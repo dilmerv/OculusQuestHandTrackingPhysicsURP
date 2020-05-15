@@ -28,12 +28,14 @@ public class LaserPointer : OVRCursor
     public float maxLength = 10.0f;
 
     private LaserBeamBehavior _laserBeamBehavior;
+    bool m_restoreOnInputAcquired = false;
 
     public LaserBeamBehavior laserBeamBehavior
     {
-        set {
+        set
+        {
             _laserBeamBehavior = value;
-            if(laserBeamBehavior == LaserBeamBehavior.Off || laserBeamBehavior == LaserBeamBehavior.OnWhenHitTarget)
+            if (laserBeamBehavior == LaserBeamBehavior.Off || laserBeamBehavior == LaserBeamBehavior.OnWhenHitTarget)
             {
                 lineRenderer.enabled = false;
             }
@@ -61,6 +63,8 @@ public class LaserPointer : OVRCursor
     private void Start()
     {
         if (cursorVisual) cursorVisual.SetActive(false);
+        OVRManager.InputFocusAcquired += OnInputFocusAcquired;
+        OVRManager.InputFocusLost += OnInputFocusLost;
     }
 
     public override void SetCursorStartDest(Vector3 start, Vector3 dest, Vector3 normal)
@@ -101,18 +105,18 @@ public class LaserPointer : OVRCursor
     // make laser beam a behavior with a prop that enables or disables
     private void UpdateLaserBeam(Vector3 start, Vector3 end)
     {
-        if(laserBeamBehavior == LaserBeamBehavior.Off)
+        if (laserBeamBehavior == LaserBeamBehavior.Off)
         {
             return;
         }
-        else if(laserBeamBehavior == LaserBeamBehavior.On)
+        else if (laserBeamBehavior == LaserBeamBehavior.On)
         {
             lineRenderer.SetPosition(0, start);
             lineRenderer.SetPosition(1, end);
         }
-        else if(laserBeamBehavior == LaserBeamBehavior.OnWhenHitTarget)
+        else if (laserBeamBehavior == LaserBeamBehavior.OnWhenHitTarget)
         {
-            if(_hitTarget)
+            if (_hitTarget)
             {
                 if (!lineRenderer.enabled)
                 {
@@ -123,7 +127,7 @@ public class LaserPointer : OVRCursor
             }
             else
             {
-                if(lineRenderer.enabled)
+                if (lineRenderer.enabled)
                 {
                     lineRenderer.enabled = false;
                 }
@@ -133,6 +137,29 @@ public class LaserPointer : OVRCursor
 
     void OnDisable()
     {
-        if(cursorVisual) cursorVisual.SetActive(false);
+        if (cursorVisual) cursorVisual.SetActive(false);
+    }
+    public void OnInputFocusLost()
+    {
+        if (gameObject && gameObject.activeInHierarchy)
+        {
+            m_restoreOnInputAcquired = true;
+            gameObject.SetActive(false);
+        }
+    }
+
+    public void OnInputFocusAcquired()
+    {
+        if (m_restoreOnInputAcquired && gameObject)
+        {
+            m_restoreOnInputAcquired = false;
+            gameObject.SetActive(true);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        OVRManager.InputFocusAcquired -= OnInputFocusAcquired;
+        OVRManager.InputFocusLost -= OnInputFocusLost;
     }
 }

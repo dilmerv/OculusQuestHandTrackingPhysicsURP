@@ -147,6 +147,9 @@ public class OVROverlay : MonoBehaviour
 	[Tooltip("The noDepthBufferTesting will stop layer's depth buffer compositing even if the engine has \"Shared Depth Buffer\" enabled")]
 	public bool noDepthBufferTesting = false;
 
+	//Format corresponding to the source texture for this layer. sRGB by default, but can be modified if necessary
+	public OVRPlugin.EyeTextureFormat layerTextureFormat = OVRPlugin.EyeTextureFormat.R8G8B8A8_sRGB;
+
 	/// <summary>
 	/// Specify overlay's shape
 	/// </summary>
@@ -160,6 +163,10 @@ public class OVROverlay : MonoBehaviour
 	/// </summary>
 	[Tooltip("The left- and right-eye Textures to show in the layer.")]
 	public Texture[] textures = new Texture[] { null, null };
+
+	[Tooltip("When checked, the texture is treated as if the alpha was already premultiplied")]
+	public bool isAlphaPremultiplied = false;
+
 
 	protected IntPtr[] texturePtrs = new IntPtr[] { IntPtr.Zero, IntPtr.Zero };
 
@@ -212,7 +219,7 @@ public class OVROverlay : MonoBehaviour
 	private OVRPlugin.LayerLayout layout {
 		get {
 #if UNITY_ANDROID && !UNITY_EDITOR
-			if (textures.Length == 2 && textures[1] != null)
+			if (textures.Length == 2 && textures[1] != null && textures[1] != textures[0])
 				return OVRPlugin.LayerLayout.Stereo;
 #endif
 			return OVRPlugin.LayerLayout.Mono;
@@ -521,7 +528,7 @@ public class OVROverlay : MonoBehaviour
 		}
 
 		OVRPlugin.LayerDesc newDesc = new OVRPlugin.LayerDesc() {
-			Format = OVRPlugin.EyeTextureFormat.R8G8B8A8_sRGB,
+			Format = layerTextureFormat,
 			LayerFlags = isExternalSurface ? 0 : (int)OVRPlugin.LayerFlags.TextureOriginAtBottomLeft,
 			Layout = layout,
 			MipLevels = 1,
@@ -570,6 +577,54 @@ public class OVROverlay : MonoBehaviour
 		return newDesc;
 	}
 
+	private Rect GetBlitRect(int eyeId)
+	{
+		if (texturesPerStage == 2)
+		{
+			return eyeId == 0 ? srcRectLeft : srcRectRight;
+		}
+		else
+		{ 
+			// Get intersection of both rects if we use the same texture for both eyes
+			float minX = Mathf.Min(srcRectLeft.x, srcRectRight.x);
+			float minY = Mathf.Min(srcRectLeft.y, srcRectRight.y);
+			float maxX = Mathf.Max(srcRectLeft.x + srcRectLeft.width, srcRectRight.x + srcRectRight.width);
+			float maxY = Mathf.Max(srcRectLeft.y + srcRectLeft.height, srcRectRight.y + srcRectRight.height);
+			return new Rect(minX, minY, maxX - minX, maxY - minY);
+		}
+	}
+
+	// A blit method that only draws into the specified rect by setting the viewport.
+	private void BlitSubImage(Texture src, RenderTexture dst, Material mat, Rect rect)
+	{
+		var p = RenderTexture.active;
+		RenderTexture.active = dst;
+
+		// our rects are inverted
+		rect.y = 1 - rect.y - rect.height;
+		var viewport = new Rect(dst.width * rect.x, dst.height * rect.y, dst.width * rect.width, dst.height * rect.height);
+
+		// do our blit using GL ops
+		GL.PushMatrix();
+		GL.Viewport(viewport);
+		GL.LoadPixelMatrix(viewport.x, viewport.x + viewport.width, viewport.y, viewport.y + viewport.height);
+		tex2DMaterial.mainTexture = src;
+		tex2DMaterial.SetPass(0);
+
+		GL.Begin(GL.TRIANGLES);
+		GL.TexCoord(new Vector2(rect.x, rect.y));
+		GL.Vertex3(viewport.x, viewport.y, 0);
+		GL.TexCoord(new Vector2(rect.x, rect.y + rect.height * 2));
+		GL.Vertex3(viewport.x, viewport.y + viewport.height * 2, 0);
+		GL.TexCoord(new Vector2(rect.x + rect.width * 2, rect.y));
+		GL.Vertex3(viewport.x + viewport.width * 2, viewport.y, 0);
+		GL.End();
+		GL.Flush();
+
+		GL.PopMatrix();
+		RenderTexture.active = p;
+	}
+
 	private bool PopulateLayer(int mipLevels, bool isHdr, OVRPlugin.Sizei size, int sampleCount, int stage)
 	{
 		if (isExternalSurface)
@@ -589,68 +644,108 @@ public class OVROverlay : MonoBehaviour
 
 			for (int mip = 0; mip < mipLevels; ++mip)
 			{
-				int width = size.w >> mip;
-				if (width < 1) width = 1;
-				int height = size.h >> mip;
-				if (height < 1) height = 1;
-#if UNITY_2017_1_1 || UNITY_2017_2_OR_NEWER
-				RenderTextureDescriptor descriptor = new RenderTextureDescriptor(width, height, rtFormat, 0);
-				descriptor.msaaSamples = sampleCount;
-				descriptor.useMipMap = true;
-				descriptor.autoGenerateMips = false;
-				descriptor.sRGB = false;
-
-				var tempRTDst = RenderTexture.GetTemporary(descriptor);
-#else
-				var tempRTDst = RenderTexture.GetTemporary(width, height, 0, rtFormat, RenderTextureReadWrite.Linear, sampleCount);
-#endif
-
-				if (!tempRTDst.IsCreated())
-					tempRTDst.Create();
-
-				tempRTDst.DiscardContents();
-
 				bool dataIsLinear = isHdr || (QualitySettings.activeColorSpace == ColorSpace.Linear);
 
-#if !UNITY_2017_1_OR_NEWER
 				var rt = textures[eyeId] as RenderTexture;
+#if !UNITY_2017_1_OR_NEWER
 				dataIsLinear |= rt != null && rt.sRGB; //HACK: Unity 5.6 and earlier convert to linear on read from sRGB RenderTexture.
 #endif
 #if UNITY_ANDROID && !UNITY_EDITOR
 				dataIsLinear = true; //HACK: Graphics.CopyTexture causes linear->srgb conversion on target write with D3D but not GLES.
 #endif
+				// PC requries premultiplied Alpha
+				bool requiresPremultipliedAlpha = !Application.isMobilePlatform;
+				
+				bool linearToSRGB = !isHdr && dataIsLinear;
+				// if the texture needs to be premultiplied, premultiply it unless its already premultiplied
+				bool premultiplyAlpha = requiresPremultipliedAlpha && !isAlphaPremultiplied;
+
+				bool bypassBlit = !linearToSRGB && !premultiplyAlpha && rt != null && rt.format == rtFormat;
+
+				RenderTexture tempRTDst = null;
+
+				if (!bypassBlit)
+				{
+					int width = size.w >> mip;
+					if (width < 1) width = 1;
+					int height = size.h >> mip;
+					if (height < 1) height = 1;
+#if UNITY_2017_1_1 || UNITY_2017_2_OR_NEWER
+					RenderTextureDescriptor descriptor = new RenderTextureDescriptor(width, height, rtFormat, 0);
+					descriptor.msaaSamples = sampleCount;
+					descriptor.useMipMap = true;
+					descriptor.autoGenerateMips = false;
+					descriptor.sRGB = false;
+
+					tempRTDst = RenderTexture.GetTemporary(descriptor);
+#else
+					tempRTDst = RenderTexture.GetTemporary(width, height, 0, rtFormat, RenderTextureReadWrite.Linear, sampleCount);
+#endif
+
+					if (!tempRTDst.IsCreated())
+					{
+						tempRTDst.Create();
+					}
+
+					tempRTDst.DiscardContents();
+
+					Material blitMat = null;
+					if (currentOverlayShape != OverlayShape.Cubemap && currentOverlayShape != OverlayShape.OffcenterCubemap)
+					{
+						blitMat = tex2DMaterial;
+					}
+					else
+					{
+						blitMat = cubeMaterial;
+					}
+
+					blitMat.SetInt("_linearToSrgb", linearToSRGB ? 1 : 0);
+					blitMat.SetInt("_premultiply", premultiplyAlpha ? 1 : 0);
+				}
 
 				if (currentOverlayShape != OverlayShape.Cubemap && currentOverlayShape != OverlayShape.OffcenterCubemap)
 				{
-					tex2DMaterial.SetInt("_linearToSrgb", (!isHdr && dataIsLinear) ? 1 : 0);
-
-					//Resolve, decompress, swizzle, etc not handled by simple CopyTexture.
-#if !UNITY_ANDROID || UNITY_EDITOR
-					// The PC compositor uses premultiplied alpha, so multiply it here.
-					tex2DMaterial.SetInt("_premultiply", 1);
-#endif
-					Graphics.Blit(textures[eyeId], tempRTDst, tex2DMaterial);
-					Graphics.CopyTexture(tempRTDst, 0, 0, et, 0, mip);
+					if (bypassBlit)
+					{
+						Graphics.CopyTexture(textures[eyeId], 0, mip, et, 0, mip);
+					}
+					else
+					{
+						if (overrideTextureRectMatrix)
+						{
+							BlitSubImage(textures[eyeId], tempRTDst, tex2DMaterial, GetBlitRect(eyeId));
+						}
+						else
+						{
+							Graphics.Blit(textures[eyeId], tempRTDst, tex2DMaterial);
+						}
+						//Resolve, decompress, swizzle, etc not handled by simple CopyTexture.
+						Graphics.CopyTexture(tempRTDst, 0, 0, et, 0, mip);
+					}
 				}
 #if UNITY_2017_1_OR_NEWER
 				else // Cubemap
 				{
 					for (int face = 0; face < 6; ++face)
 					{
-						cubeMaterial.SetInt("_linearToSrgb", (!isHdr && dataIsLinear) ? 1 : 0);
-
-#if !UNITY_ANDROID || UNITY_EDITOR
-						// The PC compositor uses premultiplied alpha, so multiply it here.
-						cubeMaterial.SetInt("_premultiply", 1);
-#endif
 						cubeMaterial.SetInt("_face", face);
-						//Resolve, decompress, swizzle, etc not handled by simple CopyTexture.
-						Graphics.Blit(textures[eyeId], tempRTDst, cubeMaterial);
-						Graphics.CopyTexture(tempRTDst, 0, 0, et, face, mip);
+						if (bypassBlit)
+						{
+							Graphics.CopyTexture(textures[eyeId], face, mip, et, face, mip);
+						}
+						else
+						{
+							//Resolve, decompress, swizzle, etc not handled by simple CopyTexture.
+							Graphics.Blit(textures[eyeId], tempRTDst, cubeMaterial);
+							Graphics.CopyTexture(tempRTDst, 0, 0, et, face, mip);
+						}
 					}
 				}
 #endif
-				RenderTexture.ReleaseTemporary(tempRTDst);
+				if (tempRTDst != null)
+				{
+					RenderTexture.ReleaseTemporary(tempRTDst);
+				}
 
 				ret = true;
 			}

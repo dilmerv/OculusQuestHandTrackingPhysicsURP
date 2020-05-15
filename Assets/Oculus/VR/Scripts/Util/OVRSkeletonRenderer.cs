@@ -261,35 +261,38 @@ public class OVRSkeletonRenderer : MonoBehaviour
 			_systemGestureMaterial = _systemGestureDefaultMaterial;
 		}
 
-		for (int i = 0; i < _ovrSkeleton.Bones.Count; i++)
+		if (_ovrSkeleton.IsInitialized)
 		{
-			var boneVis = new BoneVisualization(
-				_skeletonGO,
-				_skeletonMaterial,
-				_systemGestureMaterial,
-				_scale,
-				_ovrSkeleton.Bones[i].Transform,
-				_ovrSkeleton.Bones[i].Transform.parent);
-
-			_boneVisualizations.Add(boneVis);
-		}
-
-		if (_renderPhysicsCapsules && _ovrSkeleton.Capsules != null)
-		{
-			for (int i = 0; i < _ovrSkeleton.Capsules.Count; i++)
+			for (int i = 0; i < _ovrSkeleton.Bones.Count; i++)
 			{
-				var capsuleVis = new CapsuleVisualization(
+				var boneVis = new BoneVisualization(
 					_skeletonGO,
-					_capsuleMaterial,
+					_skeletonMaterial,
 					_systemGestureMaterial,
 					_scale,
-					_ovrSkeleton.Capsules[i]);
+					_ovrSkeleton.Bones[i].Transform,
+					_ovrSkeleton.Bones[i].Transform.parent);
 
-				_capsuleVisualizations.Add(capsuleVis);
+				_boneVisualizations.Add(boneVis);
 			}
-		}
 
-		IsInitialized = true;
+			if (_renderPhysicsCapsules && _ovrSkeleton.Capsules != null)
+			{
+				for (int i = 0; i < _ovrSkeleton.Capsules.Count; i++)
+				{
+					var capsuleVis = new CapsuleVisualization(
+						_skeletonGO,
+						_capsuleMaterial,
+						_systemGestureMaterial,
+						_scale,
+						_ovrSkeleton.Capsules[i]);
+
+					_capsuleVisualizations.Add(capsuleVis);
+				}
+			}
+
+			IsInitialized = true;
+		}
 	}
 
 	public void Update()
@@ -328,6 +331,15 @@ public class OVRSkeletonRenderer : MonoBehaviour
 				_capsuleVisualizations[i].Update(_scale, shouldRender, ShouldUseSystemGestureMaterial, _confidenceBehavior, _systemGestureBehavior);
 			}
 		}
+#if UNITY_EDITOR
+		else
+		{
+			if (OVRInput.IsControllerConnected(OVRInput.Controller.Hands) && !IsInitialized)
+			{
+				Initialize();
+			}
+		}
+#endif
 	}
 
 	private void OnDestroy()

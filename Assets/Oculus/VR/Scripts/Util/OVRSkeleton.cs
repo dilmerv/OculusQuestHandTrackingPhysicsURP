@@ -292,6 +292,16 @@ public class OVRSkeleton : MonoBehaviour
 
 	private void Update()
 	{
+#if UNITY_EDITOR
+		if (OVRInput.IsControllerConnected(OVRInput.Controller.Hands) && !IsInitialized)
+		{
+			if (_skeletonType != SkeletonType.None)
+			{
+				Initialize();
+			}
+		}
+#endif
+
 		if (!IsInitialized || _dataProvider == null)
 		{
 			IsDataValid = false;

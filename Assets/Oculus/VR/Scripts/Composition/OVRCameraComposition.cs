@@ -53,8 +53,7 @@ public abstract class OVRCameraComposition : OVRComposition {
 		{
 			OVRPlugin.CameraExtrinsics extrinsics;
 			OVRPlugin.CameraIntrinsics intrinsics;
-			OVRPlugin.Posef calibrationRawPose;
-			if (OVRPlugin.GetExternalCameraCount() > 0 && OVRPlugin.GetMixedRealityCameraInfo(0, out extrinsics, out intrinsics, out calibrationRawPose))
+			if (OVRPlugin.GetExternalCameraCount() > 0 && OVRPlugin.GetMixedRealityCameraInfo(0, out extrinsics, out intrinsics))
 			{
 				OVRPlugin.SetCameraDevicePreferredColorFrameSize(cameraDevice, intrinsics.ImageSensorPixelResolution.w, intrinsics.ImageSensorPixelResolution.h);
 			}

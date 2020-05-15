@@ -63,8 +63,7 @@ public class OVRMixedRealityCaptureTest : MonoBehaviour {
 		{
 			OVRPlugin.CameraIntrinsics cameraIntrinsics;
 			OVRPlugin.CameraExtrinsics cameraExtrinsics;
-			OVRPlugin.Posef calibrationRawPose;
-			OVRPlugin.GetMixedRealityCameraInfo(0, out cameraExtrinsics, out cameraIntrinsics, out calibrationRawPose);
+			OVRPlugin.GetMixedRealityCameraInfo(0, out cameraExtrinsics, out cameraIntrinsics);
 			defaultFov = cameraIntrinsics.FOVPort;
 		}
 
@@ -117,6 +116,11 @@ public class OVRMixedRealityCaptureTest : MonoBehaviour {
 			OVRPose trackingSpacePose = trackingSpace.ToOVRPose(false);
 			OVRPose cameraPose = defaultExternalCamera.transform.ToOVRPose(false);
 			OVRPose relativePose = trackingSpacePose.Inverse() * cameraPose;
+#if OVR_ANDROID_MRC
+			OVRPose stageToLocalPose = OVRPlugin.GetTrackingTransformRelativePose(OVRPlugin.TrackingOrigin.Stage).ToOVRPose();
+			OVRPose localToStagePose = stageToLocalPose.Inverse();
+			relativePose = localToStagePose * relativePose;
+#endif
 			cameraExtrinsics.RelativePose = relativePose.ToPosef();
 		}
 		else
@@ -217,7 +221,10 @@ public class OVRMixedRealityCaptureTest : MonoBehaviour {
 				OVRPose trackingSpacePose = trackingSpace.ToOVRPose(false);
 				OVRPose cameraPose = transform.ToOVRPose(false);
 				OVRPose relativePose = trackingSpacePose.Inverse() * cameraPose;
-				OVRPlugin.Posef relativePosef = relativePose.ToPosef();
+				OVRPose stageToLocalPose = OVRPlugin.GetTrackingTransformRelativePose(OVRPlugin.TrackingOrigin.Stage).ToOVRPose();
+				OVRPose localToStagePose = stageToLocalPose.Inverse();
+				OVRPose relativePoseInStage = localToStagePose * relativePose;
+				OVRPlugin.Posef relativePosef = relativePoseInStage.ToPosef();
 				OVRPlugin.OverrideExternalCameraStaticPose(0, true, relativePosef);
 			}
 			else

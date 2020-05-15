@@ -20,6 +20,8 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using Assets.OVR.Scripts;
+using Assets.Oculus.VR;
+using Assets.Oculus.VR.Editor;
 
 /// <summary>
 ///Scans the project and warns about the following conditions:
@@ -678,6 +680,23 @@ public class OVRLint : EditorWindow
 			{
 				PlayerSettings.Android.targetSdkVersion = requiredAndroidTargetSdkVersion;
 			}, null, false, "Fix");
+		}
+
+		// Check that Android TV Compatibility is disabled
+		if (PlayerSettings.Android.androidTVCompatibility)
+		{
+			AddFix("Disable Android TV Compatibility", "Apps with Android TV Compatibility enabled are not accepted by the Oculus Store.",
+				delegate (UnityEngine.Object obj, bool last, int selected)
+				{
+					PlayerSettings.Android.androidTVCompatibility = false;
+				}, null, false, "Fix");
+		}
+
+		if (OVRPlatformToolSettings.TargetPlatform == OVRPlatformTool.TargetPlatform.OculusGoGearVR &&
+			!OVRPlugin.supportsGearVR)
+		{
+			AddFix("Gear VR Not Supported", "Target Oculus Platform Gear VR is no longer supported after Oculus Utilities v1.41.0. " +
+				"This app will only target Oculus Go.", null, null, false);
 		}
 
 		if (!PlayerSettings.gpuSkinning)

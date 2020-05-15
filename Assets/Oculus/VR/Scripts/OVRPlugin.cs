@@ -43,7 +43,7 @@ public static class OVRPlugin
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
 	public static readonly System.Version wrapperVersion = _versionZero;
 #else
-	public static readonly System.Version wrapperVersion = OVRP_1_46_0.version;
+	public static readonly System.Version wrapperVersion = OVRP_1_48_0.version;
 #endif
 
 #if !OVRPLUGIN_UNSUPPORTED_PLATFORM
@@ -129,6 +129,18 @@ public static class OVRPlugin
 			}
 
 			return _nativeSDKVersion;
+#endif
+		}
+	}
+
+	public static bool supportsGearVR
+	{
+		get
+		{
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+			return false;
+#else
+			return wrapperVersion > _versionZero && wrapperVersion <= OVRP_1_41_0.version;
 #endif
 		}
 	}
@@ -296,6 +308,8 @@ public static class OVRPlugin
 	public enum SystemHeadset
 	{
 		None = 0,
+
+		// Mobile & Standalone headsets
 		GearVR_R320, // Note4 Innovator
 		GearVR_R321, // S6 Innovator
 		GearVR_R322, // Commercial 1
@@ -305,11 +319,13 @@ public static class OVRPlugin
 		Oculus_Go,
 		Oculus_Quest,
 
+		// PC headsets
 		Rift_DK1 = 0x1000,
 		Rift_DK2,
 		Rift_CV1,
 		Rift_CB,
 		Rift_S,
+		Oculus_Link_Quest,
 	}
 
 	public enum OverlayShape
@@ -2141,31 +2157,6 @@ public static class OVRPlugin
 #endif
 	}
 
-	public static Posef GetTrackingTransformRawPose()
-	{
-#if OVRPLUGIN_UNSUPPORTED_PLATFORM
-		return Posef.identity;
-#else
-		if (version >= OVRP_1_30_0.version)
-		{
-			Posef trackingTransforRawPose;
-			Result result = OVRP_1_30_0.ovrp_GetTrackingTransformRawPose(out trackingTransforRawPose);
-			if (result == Result.Success)
-			{
-				return trackingTransforRawPose;
-			}
-			else
-			{
-				return Posef.identity;
-			}
-		}
-		else
-		{
-			return Posef.identity;
-		}
-#endif
-	}
-
 	public static Posef GetTrackingTransformRelativePose(TrackingOrigin trackingOrigin)
 	{
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
@@ -2666,18 +2657,16 @@ public static class OVRPlugin
 #endif
 	}
 
-	public static bool GetMixedRealityCameraInfo(int cameraId, out CameraExtrinsics cameraExtrinsics, out CameraIntrinsics cameraIntrinsics, out Posef calibrationRawPose)
+	public static bool GetMixedRealityCameraInfo(int cameraId, out CameraExtrinsics cameraExtrinsics, out CameraIntrinsics cameraIntrinsics)
 	{
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
 		cameraExtrinsics = default(CameraExtrinsics);
 		cameraIntrinsics = default(CameraIntrinsics);
-		calibrationRawPose = Posef.identity;
 		return false;
 #else
 
 		cameraExtrinsics = default(CameraExtrinsics);
 		cameraIntrinsics = default(CameraIntrinsics);
-		calibrationRawPose = Posef.identity;
 
 #if OVRPLUGIN_INCLUDE_MRC_ANDROID
 		if (version >= OVRP_1_38_0.version)		// MRC functions are invalid before 1.38.0
@@ -2700,15 +2689,6 @@ public static class OVRPlugin
 				retValue = false;
 				//Debug.LogWarning("ovrp_GetExternalCameraIntrinsics return " + result);
 			}
-
-#if OVRPLUGIN_INCLUDE_MRC_ANDROID
-            result = OVRP_1_38_0.ovrp_GetExternalCameraCalibrationRawPose(cameraId, out calibrationRawPose);
-			if (result != Result.Success)
-			{
-				retValue = false;
-				//Debug.LogWarning("ovrp_GetExternalCameraCalibrationRawPose return " + result);
-			}
-#endif
 
 			return retValue;
 		}
@@ -2769,7 +2749,7 @@ public static class OVRPlugin
 #endif
 	}
 
-	public static bool OverrideExternalCameraStaticPose(int cameraId, bool useOverriddenPose, Posef pose)
+	public static bool OverrideExternalCameraStaticPose(int cameraId, bool useOverriddenPose, Posef poseInStageOrigin)
 	{
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
 		return false;
@@ -2777,7 +2757,7 @@ public static class OVRPlugin
 		if (version >= OVRP_1_44_0.version)
 		{
 			bool retValue = true;
-			Result result = OVRP_1_44_0.ovrp_OverrideExternalCameraStaticPose(cameraId, useOverriddenPose ? Bool.True : Bool.False, ref pose);
+			Result result = OVRP_1_44_0.ovrp_OverrideExternalCameraStaticPose(cameraId, useOverriddenPose ? Bool.True : Bool.False, ref poseInStageOrigin);
 			if (result != Result.Success)
 			{
 				retValue = false;
@@ -2847,6 +2827,27 @@ public static class OVRPlugin
 		if (version >= OVRP_1_44_0.version)
 		{
 			Result result = OVRP_1_44_0.ovrp_SetDefaultExternalCamera(cameraName, ref cameraIntrinsics, ref cameraExtrinsics);
+			if (result != Result.Success)
+			{
+				return false;
+			}
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+#endif
+	}
+
+	public static bool SetExternalCameraProperties(string cameraName, ref CameraIntrinsics cameraIntrinsics, ref CameraExtrinsics cameraExtrinsics)
+	{
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+		return false;
+#else
+		if (version >= OVRP_1_48_0.version)
+		{
+			Result result = OVRP_1_48_0.ovrp_SetExternalCameraProperties(cameraName, ref cameraIntrinsics, ref cameraExtrinsics);
 			if (result != Result.Success)
 			{
 				return false;
@@ -4284,7 +4285,7 @@ public static class OVRPlugin
 #endif
 		}
 
-		public static bool EncodeMrcFrame(System.IntPtr textureHandle, float[] audioData, int audioFrames, int audioChannels, double timestamp, ref int outSyncId)
+		public static bool EncodeMrcFrame(System.IntPtr textureHandle, System.IntPtr fgTextureHandle, float[] audioData, int audioFrames, int audioChannels, double timestamp, ref int outSyncId)
 		{
 #if OVRPLUGIN_UNSUPPORTED_PLATFORM
 			return false;
@@ -4311,7 +4312,17 @@ public static class OVRPlugin
 					audioDataPtr = pinnedAudioData.AddrOfPinnedObject();
 					audioDataLen = audioFrames * 4;
 				}
-				Result result = OVRP_1_38_0.ovrp_Media_EncodeMrcFrame(textureHandle, audioDataPtr, audioDataLen, audioChannels, timestamp, ref outSyncId);
+
+				Result result;
+				if (fgTextureHandle == System.IntPtr.Zero)
+				{
+					result = OVRP_1_38_0.ovrp_Media_EncodeMrcFrame(textureHandle, audioDataPtr, audioDataLen, audioChannels, timestamp, ref outSyncId);
+				}
+				else
+				{
+					result = OVRP_1_38_0.ovrp_Media_EncodeMrcFrameWithDualTextures(textureHandle, fgTextureHandle, audioDataPtr, audioDataLen, audioChannels, timestamp, ref outSyncId);
+				}
+
 				if (audioData != null)
 				{
 					pinnedAudioData.Free();
@@ -4394,6 +4405,22 @@ public static class OVRPlugin
 			if (version >= OVRP_1_38_0.version)
 			{
 				return OVRP_1_38_0.ovrp_Media_SyncMrcFrame(syncId) == Result.Success;
+			}
+			else
+			{
+				return false;
+			}
+#endif
+		}
+
+		public static bool SetAvailableQueueIndexVulkan(uint queueIndexVk)
+		{
+#if OVRPLUGIN_UNSUPPORTED_PLATFORM
+			return false;
+#else
+			if (version >= OVRP_1_45_0.version)
+			{
+				return OVRP_1_45_0.ovrp_Media_SetAvailableQueueIndexVulkan(queueIndexVk) == Result.Success;
 			}
 			else
 			{
@@ -5219,8 +5246,8 @@ public static class OVRPlugin
 		[DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
 		public static extern Result ovrp_GetCurrentTrackingTransformPose(out Posef trackingTransformPose);
 
-		[DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
-		public static extern Result ovrp_GetTrackingTransformRawPose(out Posef trackingTransformRawPose);
+		//[DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+		//public static extern Result ovrp_GetTrackingTransformRawPose(out Posef trackingTransformRawPose);
 
 		[DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
 		public static extern Result ovrp_SendEvent2(string name, string param, string source);
@@ -5348,8 +5375,8 @@ public static class OVRPlugin
 		public static extern Result ovrp_Media_SyncMrcFrame(int syncId);
 
 
-		[DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
-		public static extern Result ovrp_GetExternalCameraCalibrationRawPose(int cameraId, out Posef rawPose);
+		//[DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+		//public static extern Result ovrp_GetExternalCameraCalibrationRawPose(int cameraId, out Posef rawPose);
 
 		[DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
 		public static extern Result ovrp_SetDeveloperMode(Bool active);
@@ -5413,7 +5440,7 @@ public static class OVRPlugin
 		public static extern Result ovrp_GetUseOverriddenExternalCameraFov(int cameraId, out Bool useOverriddenFov);
 
 		[DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
-		public static extern Result ovrp_OverrideExternalCameraStaticPose(int cameraId, Bool useOverriddenPose, ref Posef pose);
+		public static extern Result ovrp_OverrideExternalCameraStaticPose(int cameraId, Bool useOverriddenPose, ref Posef poseInStageOrigin);
 
 		[DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
 		public static extern Result ovrp_GetUseOverriddenExternalCameraStaticPose(int cameraId, out Bool useOverriddenStaticPose);
@@ -5432,6 +5459,9 @@ public static class OVRPlugin
 
 		[DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
 		public static extern Result ovrp_GetSystemHmd3DofModeEnabled(ref Bool enabled);
+
+		[DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+		public static extern Result ovrp_Media_SetAvailableQueueIndexVulkan(uint queueIndexVk);
 	}
 
 	private static class OVRP_1_46_0
@@ -5444,6 +5474,19 @@ public static class OVRPlugin
 
 		[DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
 		public static extern Result ovrp_SetTiledMultiResDynamic(Bool isDynamic);
+	}
+
+	private static class OVRP_1_47_0
+	{
+		public static readonly System.Version version = new System.Version(1, 47, 0);
+	}
+
+	private static class OVRP_1_48_0
+	{
+		public static readonly System.Version version = new System.Version(1, 48, 0);
+
+		[DllImport(pluginName, CallingConvention = CallingConvention.Cdecl)]
+		public static extern Result ovrp_SetExternalCameraProperties(string cameraName, ref CameraIntrinsics cameraIntrinsics, ref CameraExtrinsics cameraExtrinsics);
 	}
 
 #endif // !OVRPLUGIN_UNSUPPORTED_PLATFORM

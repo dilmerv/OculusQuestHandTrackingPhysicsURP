@@ -3,16 +3,16 @@ Filename    :   ONSPPropagationInterface.cs
 Content     :   Interface into the Oculus Audio propagation functions
 Copyright   :   Copyright (c) Facebook Technologies, LLC and its affiliates. All rights reserved.
 
-Licensed under the Oculus SDK Version 3.5 (the "License"); 
-you may not use the Oculus SDK except in compliance with the License, 
-which is provided at the time of installation or download, or which 
+Licensed under the Oculus SDK Version 3.5 (the "License");
+you may not use the Oculus SDK except in compliance with the License,
+which is provided at the time of installation or download, or which
 otherwise accompanies this software in either electronic or hard copy form.
 
 You may obtain a copy of the License at
 
 https://developer.oculus.com/licenses/sdk-3.5/
 
-Unless required by applicable law or agreed to in writing, the Oculus SDK 
+Unless required by applicable law or agreed to in writing, the Oculus SDK
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
@@ -67,7 +67,7 @@ class ONSPPropagation
     static PropagationInterface FindInterface()
     {
         IntPtr temp;
-        try 
+        try
         {
             WwisePluginInterface.ovrAudio_GetPluginContext(out temp, ClientType.OVRA_CLIENT_TYPE_WWISE_UNKNOWN);
             Debug.Log("Propagation initialized with Wwise Oculus Spatializer plugin");
@@ -123,6 +123,7 @@ class ONSPPropagation
         public const uint OVRA_CLIENT_TYPE_TEST = 10;
         public const uint OVRA_CLIENT_TYPE_OTHER = 11;
         public const uint OVRA_CLIENT_TYPE_WWISE_UNKNOWN = 12;
+        public const uint OVRA_CLIENT_TYPE_WWISE_2019_1 = 13;
     }
 
     public interface PropagationInterface
@@ -145,9 +146,9 @@ class ONSPPropagation
         int AudioGeometryWriteMeshFile(IntPtr geometry, string filePath);
         int AudioGeometryReadMeshFile(IntPtr geometry, string filePath);
         int AudioGeometryWriteMeshFileObj(IntPtr geometry, string filePath);
-        
+
         /***********************************************************************************/
-        // Material API        
+        // Material API
         int AudioMaterialGetFrequency(IntPtr material, MaterialProperty property, float frequency, out float value);
         int CreateAudioMaterial(out IntPtr material);
         int DestroyAudioMaterial(IntPtr material);

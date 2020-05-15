@@ -55,21 +55,21 @@ public abstract class OVRComposition {
         Debug.Log(cameraRig == null ? "[OVRComposition] CameraRig not found" : "[OVRComposition] CameraRig found");
     }
 
-    public OVRPose ComputeCameraWorldSpacePose(OVRPlugin.CameraExtrinsics extrinsics, OVRPlugin.Posef calibrationRawPose)
+    public OVRPose ComputeCameraWorldSpacePose(OVRPlugin.CameraExtrinsics extrinsics)
 	{
-		OVRPose trackingSpacePose = ComputeCameraTrackingSpacePose(extrinsics, calibrationRawPose);
+		OVRPose trackingSpacePose = ComputeCameraTrackingSpacePose(extrinsics);
 		OVRPose worldSpacePose = OVRExtensions.ToWorldSpacePose(trackingSpacePose);
 		return worldSpacePose;
 	}
 
-	public OVRPose ComputeCameraTrackingSpacePose(OVRPlugin.CameraExtrinsics extrinsics, OVRPlugin.Posef calibrationRawPose)
+	public OVRPose ComputeCameraTrackingSpacePose(OVRPlugin.CameraExtrinsics extrinsics)
 	{
 		OVRPose trackingSpacePose = new OVRPose();
 
 		OVRPose cameraTrackingSpacePose = extrinsics.RelativePose.ToOVRPose();
 #if OVR_ANDROID_MRC
-		OVRPose rawPose = OVRPlugin.GetTrackingTransformRawPose().ToOVRPose();
-		cameraTrackingSpacePose = rawPose * (calibrationRawPose.ToOVRPose().Inverse() * cameraTrackingSpacePose);
+		OVRPose stageToLocalPose = OVRPlugin.GetTrackingTransformRelativePose(OVRPlugin.TrackingOrigin.Stage).ToOVRPose();
+		cameraTrackingSpacePose = stageToLocalPose * cameraTrackingSpacePose;
 #endif
 		trackingSpacePose = cameraTrackingSpacePose;
 

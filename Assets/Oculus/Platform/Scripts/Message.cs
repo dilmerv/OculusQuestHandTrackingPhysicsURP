@@ -113,6 +113,7 @@ namespace Oculus.Platform
       LanguagePack_SetCurrent                             = 0x5B4FBBE0,
       Leaderboard_GetEntries                              = 0x5DB3474C,
       Leaderboard_GetEntriesAfterRank                     = 0x18378BEF,
+      Leaderboard_GetEntriesByIds                         = 0x39607BFC,
       Leaderboard_GetNextEntries                          = 0x4E207CD9,
       Leaderboard_GetPreviousEntries                      = 0x4901DAC0,
       Leaderboard_WriteEntry                              = 0x117FC8FE,
@@ -483,6 +484,7 @@ namespace Oculus.Platform
 
         case Message.MessageType.Leaderboard_GetEntries:
         case Message.MessageType.Leaderboard_GetEntriesAfterRank:
+        case Message.MessageType.Leaderboard_GetEntriesByIds:
         case Message.MessageType.Leaderboard_GetNextEntries:
         case Message.MessageType.Leaderboard_GetPreviousEntries:
           message = new MessageWithLeaderboardEntryList(messageHandle);

@@ -943,6 +943,16 @@ namespace Oculus.Platform
     [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, EntryPoint="ovr_Leaderboard_GetEntriesAfterRank")]
     private static extern ulong ovr_Leaderboard_GetEntriesAfterRank_Native(IntPtr leaderboardName, int limit, ulong afterRank);
 
+    public static ulong ovr_Leaderboard_GetEntriesByIds(string leaderboardName, int limit, LeaderboardStartAt startAt, UInt64[] userIDs, uint userIDLength) {
+      IntPtr leaderboardName_native = StringToNative(leaderboardName);
+      var result = (ovr_Leaderboard_GetEntriesByIds_Native(leaderboardName_native, limit, startAt, userIDs, userIDLength));
+      Marshal.FreeCoTaskMem(leaderboardName_native);
+      return result;
+    }
+
+    [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl, EntryPoint="ovr_Leaderboard_GetEntriesByIds")]
+    private static extern ulong ovr_Leaderboard_GetEntriesByIds_Native(IntPtr leaderboardName, int limit, LeaderboardStartAt startAt, UInt64[] userIDs, uint userIDLength);
+
     [DllImport(DLL_NAME, CallingConvention=CallingConvention.Cdecl)]
     public static extern ulong ovr_Leaderboard_GetNextEntries(IntPtr handle);
 

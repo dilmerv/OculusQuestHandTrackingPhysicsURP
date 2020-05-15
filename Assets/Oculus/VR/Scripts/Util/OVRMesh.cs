@@ -119,4 +119,17 @@ public class OVRMesh : MonoBehaviour
 			IsInitialized = true;
 		}
 	}
+
+#if UNITY_EDITOR
+	private void Update()
+	{
+		if (OVRInput.IsControllerConnected(OVRInput.Controller.Hands) && !IsInitialized)
+		{
+			if (_meshType != MeshType.None)
+			{
+				Initialize(_meshType);
+			}
+		}
+	}
+#endif
 }

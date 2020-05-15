@@ -82,6 +82,7 @@ public class OVRControllerHelper : MonoBehaviour
 				activeControllerType = ControllerType.Rift;
 				break;
 			case OVRPlugin.SystemHeadset.Rift_S:
+			case OVRPlugin.SystemHeadset.Oculus_Link_Quest:
 				activeControllerType = ControllerType.QuestAndRiftS;
 				break;
 			case OVRPlugin.SystemHeadset.GearVR_R320:

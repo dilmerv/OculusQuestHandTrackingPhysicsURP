@@ -23,7 +23,10 @@ public class OvrAvatarSDKManager : MonoBehaviour
     private bool avatarSpecRequestAvailable = true;
     private float lastDispatchedAvatarSpecRequestTime = 0f;
     private const float AVATAR_SPEC_REQUEST_TIMEOUT = 5f;
+
+#if AVATAR_DEBUG
     private ovrAvatarDebugContext debugContext = ovrAvatarDebugContext.None;
+#endif
 
     public struct AvatarSpecRequestParams
     {
@@ -88,7 +91,7 @@ public class OvrAvatarSDKManager : MonoBehaviour
                 "Go to Oculus Avatar > Edit Configuration to supply one", OvrAvatarSettings.Instance);
             appId = "0";
         }
-        
+
 #if UNITY_ANDROID && !UNITY_EDITOR
 #if AVATAR_XPLAT
         CAPI.ovrAvatar_Initialize(appId);
@@ -118,7 +121,7 @@ public class OvrAvatarSDKManager : MonoBehaviour
     void OnDestroy()
     {
         CAPI.Shutdown();
-        CAPI.ovrAvatar_RegisterLoggingCallback(null);   
+        CAPI.ovrAvatar_RegisterLoggingCallback(null);
         CAPI.ovrAvatar_Shutdown();
     }
 
